@@ -1,3 +1,5 @@
+import { ImageCrop } from "./ImageCrop";
+
 export default function ImageCropPage() {
-  return <h1>crop</h1>;
+  return <ImageCrop path="/file.svg" />;
 }
