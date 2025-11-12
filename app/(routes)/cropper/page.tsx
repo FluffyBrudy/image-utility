@@ -1,5 +1,5 @@
-import { ImageCrop } from "./ImageCrop";
+import CropContainer from "./CropContainer";
 
 export default function ImageCropPage() {
-  return <ImageCrop path="/file.svg" />;
+  return <CropContainer />;
 }

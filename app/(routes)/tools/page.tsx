@@ -9,8 +9,10 @@ import {
 } from "@/components/ui/shadcn-io/dropzone";
 import { X as Close } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
+  const navigate = useRouter();
   const setImageFiles = useImageStore((state) => state.setImagesPath);
   const removeFile = useImageStore((state) => state.removeElement);
   const files = useImageStore((state) => state.imageFiles);
@@ -20,8 +22,12 @@ export default function Page() {
 
   const hasFiles = files && files.size > 0;
 
+  const handleToolChoice = () => {
+    navigate.push("/cropper");
+  };
+
   return (
-    <main className="flex min-h-screen w-full items-center justify-center bg-muted/30 px-4">
+    <main className="flex flex-col min-h-screen w-full items-center justify-center bg-muted/30 px-4">
       <section className="w-full max-w-2xl">
         <Dropzone
           accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
@@ -70,6 +76,15 @@ export default function Page() {
             </Button>
           </div>
         )}
+      </section>
+      <section>
+        <Button
+          disabled={!hasFiles}
+          className="cursor-pointer"
+          onClick={handleToolChoice}
+        >
+          Crop images
+        </Button>
       </section>
     </main>
   );

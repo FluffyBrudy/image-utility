@@ -1,34 +1,45 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import Image from "next/image";
 
 interface ImageProps {
-  path: string;
+  pathOrFile: string | File;
+  onClick?: () => void;
 }
 
-export function ImageCrop({ path }: ImageProps) {
-  const [size, setSize] = useState({ width: 32, height: 32 });
-  const [loaded, setLoaded] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export function ImageCrop({ pathOrFile, onClick }: ImageProps) {
+  const [selected, setSelected] = useState(false);
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) {
-      alert("sorry couldn't get context");
-      return;
-    }
-    const image = new Image();
-    image.src = path;
-    image
-      .decode()
-      .then(() => {
-        setLoaded(true);
-        setSize({ width: image.width, height: image.height });
-        ctx.drawImage(image, 0, 0);
-      })
-      .catch((err) => {
-        alert(JSON.stringify(err));
-      });
-  }, [loaded, path]);
-  return <canvas {...size} ref={canvasRef}></canvas>;
+  const handleClick = () => {
+    onClick?.();
+    setSelected((state) => !state);
+  };
+
+  const src =
+    typeof pathOrFile === "string"
+      ? pathOrFile
+      : URL.createObjectURL(pathOrFile);
+
+  return (
+    <div className="inline-block max-w-[500px] w-full">
+      <div
+        className={`relative w-full transition-opacity duration-300 ${
+          selected ? "opacity-50" : "opacity-100"
+        }`}
+      >
+        <Image
+          src={src}
+          alt={typeof pathOrFile === "string" ? "image" : pathOrFile.name}
+          onClick={handleClick}
+          layout="responsive"
+          width={500}
+          height={500}
+          className="object-contain cursor-pointer"
+          onLoadingComplete={() => {
+            if (typeof pathOrFile !== "string") URL.revokeObjectURL(src);
+          }}
+        />
+      </div>
+    </div>
+  );
 }
