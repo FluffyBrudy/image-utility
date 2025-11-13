@@ -102,6 +102,7 @@ export function cropCanvas(origCanvas: HTMLCanvasElement, offset = 0) {
     origCanvas.width,
     origCanvas.height,
   );
+
   if (!startPix) return origCanvas;
 
   const bbox = getBoundingBox(
@@ -109,22 +110,36 @@ export function cropCanvas(origCanvas: HTMLCanvasElement, offset = 0) {
     origCanvas.width,
     origCanvas.height,
     startPix,
-  )!;
+  );
+
+  if (!bbox) return origCanvas;
+
+  const rawWidth = bbox.maxc - bbox.minc;
+  const rawHeight = bbox.maxr - bbox.minr;
+
+  const newWidth =
+    offset > 0 ? Math.ceil(rawWidth / offset) * offset : rawWidth;
+  const newHeight =
+    offset > 0 ? Math.ceil(rawHeight / offset) * offset : rawHeight;
+
   const newCanvas = document.createElement("canvas");
-  newCanvas.width = bbox.maxc - bbox.minc;
-  newCanvas.height = bbox.maxr - bbox.minr;
+  newCanvas.width = newWidth;
+  newCanvas.height = newHeight;
   const newCtx = newCanvas.getContext("2d")!;
+
+  const drawX = offset > 0 ? ~~((newWidth - rawWidth) / 2) : 0;
+  const drawY = offset > 0 ? ~~((newHeight - rawHeight) / 2) : 0;
 
   newCtx.drawImage(
     origCanvas,
     bbox.minc,
     bbox.minr,
-    newCanvas.width,
-    newCanvas.height,
-    0,
-    0,
-    newCanvas.width,
-    newCanvas.height,
+    rawWidth,
+    rawHeight,
+    drawX,
+    drawY,
+    rawWidth,
+    rawHeight,
   );
 
   return newCanvas;

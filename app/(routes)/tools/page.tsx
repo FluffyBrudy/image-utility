@@ -11,6 +11,7 @@ import { X as Close, Upload, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+const MAX_FILES = 10;
 export default function Page() {
   const navigate = useRouter();
   const setImageFiles = useImageStore((state) => state.setImagesPath);
@@ -45,7 +46,7 @@ export default function Page() {
       <section className="w-full max-w-2xl">
         <Dropzone
           accept={{ "image/*": [".png", ".jpg", ".jpeg"] }}
-          maxFiles={3}
+          maxFiles={MAX_FILES}
           onDrop={handleDrop}
           onError={console.error}
           src={hasFiles ? Array.from(files) : undefined}
@@ -120,7 +121,8 @@ export default function Page() {
       </div>
 
       <p className="text-sm text-muted-foreground mt-8 text-center max-w-xs">
-        Support for PNG, JPG, and JPEG formats. Up to 3 images at a time.
+        Support for PNG, JPG, and JPEG formats. Up to {MAX_FILES} images at a
+        time.
       </p>
     </main>
   );
