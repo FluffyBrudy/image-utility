@@ -1,4 +1,4 @@
-import CropContainer from "./CropContainer";
+import { CropContainer } from "./CropContainer";
 
 export default function ImageCropPage() {
   return <CropContainer />;

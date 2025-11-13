@@ -1,7 +1,8 @@
 "use client";
+
 import { useImageStore } from "@/app/store/image.store";
 import { ImageCrop } from "./ImageCrop";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { loadImageFromFile } from "@/app/utils/file.utils";
 import { imageToCanvas } from "@/app/utils/image.utils";
@@ -11,26 +12,52 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import toast, { Toaster } from "react-hot-toast";
 
 const BATCH_SIZE = 3;
 
-export default function CropContainer() {
+export function CropContainer() {
   const router = useRouter();
   const files = useImageStore((state) => state.imageFiles);
-  const [selectedFiles, setSelectedFile] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(
+    () => Number(localStorage.getItem("crop-offset")) || 0,
+  );
+  const [processedFiles, setProcessedFiles] = useState(0);
 
-  const handleSelectedFile = (file: File) => {
-    if (selectedFiles.includes(file))
-      setSelectedFile((states) => states.filter((state) => state !== file));
-    else setSelectedFile((states) => [file, ...states]);
+  useEffect(() => {
+    localStorage.setItem("crop-offset", offset.toString());
+  }, [offset]);
+
+  const handleSelectedFile = (file: File, shiftKey = false) => {
+    if (shiftKey && selectedFiles.length) {
+      const filesArray = Array.from(files);
+      const lastSelectedIndex = filesArray.findIndex(
+        (f) => f === selectedFiles[selectedFiles.length - 1],
+      );
+      const currentIndex = filesArray.findIndex((f) => f === file);
+      const [start, end] =
+        lastSelectedIndex < currentIndex
+          ? [lastSelectedIndex, currentIndex]
+          : [currentIndex, lastSelectedIndex];
+      const range = filesArray.slice(start, end + 1);
+      setSelectedFiles((prev) => Array.from(new Set([...prev, ...range])));
+    } else if (selectedFiles.includes(file)) {
+      setSelectedFiles((prev) => prev.filter((f) => f !== file));
+    } else {
+      setSelectedFiles((prev) => [file, ...prev]);
+    }
   };
 
   const handleDownloadAll = async () => {
-    let fileCount = 0;
-    const zip = new JSZip();
+    if (!selectedFiles.length) return;
+
     setIsProcessing(true);
+    setProcessedFiles(0);
+    const zip = new JSZip();
+    let fileCount = 0;
+
     try {
       for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
         const batch = selectedFiles.slice(i, i + BATCH_SIZE);
@@ -44,25 +71,42 @@ export default function CropContainer() {
                 croppedCanvas.toBlob(resolve),
               );
               if (!blob) return;
-              const filename = file.name.slice(file.name.lastIndexOf(".") + 1);
-              zip.file(`${fileCount++}.${filename}`, blob);
+
+              const extension = file.name.slice(file.name.lastIndexOf(".") + 1);
+              zip.file(`${fileCount++}.${extension}`, blob);
+              setProcessedFiles((prev) => prev + 1);
             } catch (err) {
-              console.error("Failed to process file:", file.name, err);
+              toast.error(`Failed to process ${file.name}`);
+              console.error(err);
             }
           }),
         );
       }
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      saveAs(zipBlob, "imut.zip");
+      saveAs(zipBlob, "cropped_images.zip");
+      toast.success("Download ready!");
     } finally {
       setIsProcessing(false);
+      setProcessedFiles(0);
     }
   };
 
   const isAllSelected = selectedFiles.length === files.size && files.size > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <Toaster
+        toastOptions={{
+          style: {
+            borderRadius: "8px",
+            background: "#333",
+            color: "#fff",
+            padding: "12px 16px",
+            fontWeight: 500,
+          },
+          duration: 3000,
+        }}
+      />
       <div className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -90,35 +134,32 @@ export default function CropContainer() {
           </div>
         </div>
       </div>
-      <div className="flex w-full justify-between">
-        <div className="max-w-7xl flex-1 m-auto flex justify-between gap-4 pt-8 border-t border-border">
-          <button
-            onClick={() => setSelectedFile([])}
-            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Deselect All
-          </button>
 
-          <button
-            onClick={() =>
-              setSelectedFile(
-                selectedFiles.length === files.size ? [] : Array.from(files),
-              )
-            }
-            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {isAllSelected ? "Deselect" : "Select"} All
-          </button>
-        </div>
+      <div className="flex w-full justify-between border-t border-border pt-6 max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => setSelectedFiles([])}
+          className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Deselect All
+        </button>
+        <button
+          onClick={() =>
+            setSelectedFiles(isAllSelected ? [] : Array.from(files))
+          }
+          className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {isAllSelected ? "Deselect" : "Select"} All
+        </button>
       </div>
-      <div className="max-w-7xl mx-auto px-4 py-12">
+
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {files.size === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground">No images loaded</p>
           </div>
         ) : (
           <>
-            <div className="flex w-full justify-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="offset"
@@ -128,15 +169,17 @@ export default function CropContainer() {
                 </label>
                 <Input
                   id="offset"
-                  type="number"
+                  type="range"
                   min={0}
                   max={128}
                   value={offset}
                   onChange={(e) => setOffset(Number(e.target.value))}
-                  className="w-24 h-9 text-sm"
+                  className="w-48"
                 />
+                <span className="text-sm w-12 text-right">{offset}px</span>
               </div>
-              <div className="flex items-center">
+
+              <div className="flex-1 flex items-center">
                 <Button
                   onClick={handleDownloadAll}
                   disabled={selectedFiles.length === 0 || isProcessing}
@@ -146,7 +189,7 @@ export default function CropContainer() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Processing...
+                      Processing {processedFiles}/{selectedFiles.length}
                     </>
                   ) : (
                     <>
@@ -157,20 +200,44 @@ export default function CropContainer() {
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+            {isProcessing && (
+              <div className="w-full bg-muted h-2 rounded mt-2">
+                <div
+                  className="bg-primary h-2 rounded"
+                  style={{
+                    width: `${(processedFiles / selectedFiles.length) * 100}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {Array.from(files).map((file) => {
                 const isSelected = selectedFiles.includes(file);
+
                 return (
                   <div
                     key={file.name}
-                    onClick={() => handleSelectedFile(file)}
-                    className={`cursor-pointer rounded-xl overflow-hidden transition-all duration-300 border-2 ${
+                    onClick={(e) => handleSelectedFile(file, e.shiftKey)}
+                    className={`relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 border-2 ${
                       isSelected
                         ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                         : "border-border hover:border-primary/40"
                     }`}
+                    aria-selected={isSelected}
                   >
-                    <ImageCrop file={file} isSelected={isSelected} />
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-primary rounded-full p-1 text-white z-10">
+                        ✓
+                      </div>
+                    )}
+
+                    <ImageCrop
+                      file={file}
+                      isSelected={isSelected}
+                      previewOffset={offset}
+                    />
                   </div>
                 );
               })}

@@ -113,7 +113,7 @@ export default function Page() {
           disabled={!hasFiles}
           onClick={handleToolChoice}
           size="lg"
-          className="gap-2"
+          className="gap-2 border-foreground"
         >
           Start Cropping
           <ArrowRight className="w-4 h-4" />
