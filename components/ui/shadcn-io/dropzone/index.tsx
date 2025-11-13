@@ -16,7 +16,7 @@ type DropzoneContextType = {
   maxFiles?: DropzoneOptions["maxFiles"];
 };
 
-const renderBytes = (bytes: number) => {
+export const renderBytes = (bytes: number) => {
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
   let size = bytes;
   let unitIndex = 0;

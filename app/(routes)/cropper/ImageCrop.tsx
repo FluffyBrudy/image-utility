@@ -1,21 +1,19 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import { renderBytes } from "@/components/ui/shadcn-io/dropzone";
 
 interface ImageProps {
-  pathOrFile: string | File;
+  file: File;
   isSelected?: boolean;
 }
 
-export function ImageCrop({ pathOrFile, isSelected }: ImageProps) {
+export function ImageCrop({ file, isSelected }: ImageProps) {
   const [isLoading, setIsLoading] = useState(true);
 
-  const src =
-    typeof pathOrFile === "string"
-      ? pathOrFile
-      : URL.createObjectURL(pathOrFile);
+  const src = URL.createObjectURL(file);
 
-  const fileName = typeof pathOrFile === "string" ? "Image" : pathOrFile.name;
+  const fileName = file.name;
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -25,7 +23,7 @@ export function ImageCrop({ pathOrFile, isSelected }: ImageProps) {
         }`}
       >
         <Image
-          src={src || "/placeholder.svg"}
+          src={src}
           alt={fileName}
           fill
           className="object-cover"
@@ -40,6 +38,7 @@ export function ImageCrop({ pathOrFile, isSelected }: ImageProps) {
         <p className="text-sm font-medium text-foreground truncate">
           {fileName}
         </p>
+        <p className="font-bold">{renderBytes(file.size)}</p>
         <p className="text-xs text-muted-foreground mt-1">
           Click to {isSelected ? "deselect" : "select"}
         </p>

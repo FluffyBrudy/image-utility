@@ -61,12 +61,13 @@ export default function Page() {
                   <h2 className="text-lg font-semibold text-foreground">
                     {files.size} {files.size === 1 ? "image" : "images"} ready
                   </h2>
-                  <button
+                  <div
+                    role="button"
                     onClick={() => setImageFiles([])}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     Clear
-                  </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

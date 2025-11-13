@@ -8,6 +8,7 @@ import { imageToCanvas } from "@/app/utils/image.utils";
 import { cropCanvas } from "@/app/lib/imgmanip";
 import { Download, ChevronLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 const BATCH_SIZE = 3;
 
@@ -16,6 +17,7 @@ export default function CropContainer() {
   const files = useImageStore((state) => state.imageFiles);
   const [selectedFiles, setSelectedFile] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [offset, setOffset] = useState(0);
 
   const handleSelectedFile = (file: File) => {
     if (selectedFiles.includes(file))
@@ -33,7 +35,7 @@ export default function CropContainer() {
             try {
               const img = await loadImageFromFile(file);
               const canvas = imageToCanvas(img);
-              const croppedCanvas = cropCanvas(canvas);
+              const croppedCanvas = cropCanvas(canvas, offset);
               const blob = await new Promise<Blob | null>((resolve) =>
                 croppedCanvas.toBlob(resolve),
               );
@@ -106,7 +108,7 @@ export default function CropContainer() {
                         : "border-border hover:border-primary/40"
                     }`}
                   >
-                    <ImageCrop pathOrFile={file} isSelected={isSelected} />
+                    <ImageCrop file={file} isSelected={isSelected} />
                   </div>
                 );
               })}
@@ -132,6 +134,24 @@ export default function CropContainer() {
               >
                 {isAllSelected ? "Deselect" : "Select"} All
               </button>
+
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="offset"
+                  className="text-sm font-medium text-muted-foreground"
+                >
+                  Offset:
+                </label>
+                <Input
+                  id="offset"
+                  type="number"
+                  min={0}
+                  max={128}
+                  value={offset}
+                  onChange={(e) => setOffset(Number(e.target.value))}
+                  className="w-24 h-9 text-sm"
+                />
+              </div>
 
               <Button
                 onClick={handleDownloadAll}

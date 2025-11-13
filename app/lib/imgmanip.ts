@@ -94,7 +94,7 @@ export function sliceRGBARegion(
   return { region: slicedRegion, w: maxc - minc, h: maxr - minr };
 }
 
-export function cropCanvas(origCanvas: HTMLCanvasElement) {
+export function cropCanvas(origCanvas: HTMLCanvasElement, offset = 0) {
   const ctx = origCanvas.getContext("2d")!;
   const imdata = ctx.getImageData(0, 0, origCanvas.width, origCanvas.height);
   const startPix = findStartingImgPixel(
