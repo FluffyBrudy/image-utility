@@ -7,7 +7,7 @@ import {
   DropzoneContent,
   DropzoneEmptyState,
 } from "@/components/ui/shadcn-io/dropzone";
-import { Clover as Close, Upload, ArrowRight } from "lucide-react";
+import { X as Close, Upload, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
