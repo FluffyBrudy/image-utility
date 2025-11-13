@@ -9,6 +9,8 @@ import { cropCanvas } from "@/app/lib/imgmanip";
 import { Download, ChevronLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 const BATCH_SIZE = 3;
 
@@ -26,6 +28,8 @@ export default function CropContainer() {
   };
 
   const handleDownloadAll = async () => {
+    let fileCount = 0;
+    const zip = new JSZip();
     setIsProcessing(true);
     try {
       for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
@@ -40,17 +44,16 @@ export default function CropContainer() {
                 croppedCanvas.toBlob(resolve),
               );
               if (!blob) return;
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = file.name;
-              a.click();
-              URL.revokeObjectURL(a.href);
+              const filename = file.name.slice(file.name.lastIndexOf(".") + 1);
+              zip.file(`${fileCount++}.${filename}`, blob);
             } catch (err) {
               console.error("Failed to process file:", file.name, err);
             }
           }),
         );
       }
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(zipBlob, "imut.zip");
     } finally {
       setIsProcessing(false);
     }
@@ -87,7 +90,27 @@ export default function CropContainer() {
           </div>
         </div>
       </div>
+      <div className="flex w-full justify-between">
+        <div className="max-w-7xl flex-1 m-auto flex justify-between gap-4 pt-8 border-t border-border">
+          <button
+            onClick={() => setSelectedFile([])}
+            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Deselect All
+          </button>
 
+          <button
+            onClick={() =>
+              setSelectedFile(
+                selectedFiles.length === files.size ? [] : Array.from(files),
+              )
+            }
+            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isAllSelected ? "Deselect" : "Select"} All
+          </button>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 py-12">
         {files.size === 0 ? (
           <div className="text-center py-16">
@@ -151,28 +174,6 @@ export default function CropContainer() {
                   </div>
                 );
               })}
-            </div>
-
-            <div className="flex items-center justify-between gap-4 pt-8 border-t border-border">
-              <button
-                onClick={() => setSelectedFile([])}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Deselect All
-              </button>
-
-              <button
-                onClick={() =>
-                  setSelectedFile(
-                    selectedFiles.length === files.size
-                      ? []
-                      : Array.from(files),
-                  )
-                }
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {isAllSelected ? "Deselect" : "Select"} All
-              </button>
             </div>
           </>
         )}
