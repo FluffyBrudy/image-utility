@@ -4,41 +4,45 @@ import Image from "next/image";
 
 interface ImageProps {
   pathOrFile: string | File;
-  onClick?: () => void;
+  isSelected?: boolean;
 }
 
-export function ImageCrop({ pathOrFile, onClick }: ImageProps) {
-  const [selected, setSelected] = useState(false);
-
-  const handleClick = () => {
-    onClick?.();
-    setSelected((state) => !state);
-  };
+export function ImageCrop({ pathOrFile, isSelected }: ImageProps) {
+  const [isLoading, setIsLoading] = useState(true);
 
   const src =
     typeof pathOrFile === "string"
       ? pathOrFile
       : URL.createObjectURL(pathOrFile);
 
+  const fileName = typeof pathOrFile === "string" ? "Image" : pathOrFile.name;
+
   return (
-    <div className="inline-block max-w-[500px] w-full">
+    <div className="w-full h-full flex flex-col">
       <div
-        className={`relative w-full transition-opacity duration-300 ${
-          selected ? "opacity-50" : "opacity-100"
+        className={`relative w-full aspect-square bg-muted overflow-hidden transition-opacity duration-300 ${
+          isSelected ? "opacity-100" : "opacity-100 hover:opacity-95"
         }`}
       >
         <Image
-          src={src}
-          alt={typeof pathOrFile === "string" ? "image" : pathOrFile.name}
-          onClick={handleClick}
-          layout="responsive"
-          width={500}
-          height={500}
-          className="object-contain cursor-pointer"
-          onLoadingComplete={() => {
-            if (typeof pathOrFile !== "string") URL.revokeObjectURL(src);
-          }}
+          src={src || "/placeholder.svg"}
+          alt={fileName}
+          fill
+          className="object-cover"
+          onLoadingComplete={() => setIsLoading(false)}
         />
+        {isLoading && (
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        )}
+      </div>
+
+      <div className="px-4 py-3 bg-card border-t border-border">
+        <p className="text-sm font-medium text-foreground truncate">
+          {fileName}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Click to {isSelected ? "deselect" : "select"}
+        </p>
       </div>
     </div>
   );
