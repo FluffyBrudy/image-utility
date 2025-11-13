@@ -95,6 +95,45 @@ export default function CropContainer() {
           </div>
         ) : (
           <>
+            <div className="flex w-full justify-center gap-2">
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="offset"
+                  className="text-sm font-medium text-muted-foreground"
+                >
+                  Offset:
+                </label>
+                <Input
+                  id="offset"
+                  type="number"
+                  min={0}
+                  max={128}
+                  value={offset}
+                  onChange={(e) => setOffset(Number(e.target.value))}
+                  className="w-24 h-9 text-sm"
+                />
+              </div>
+              <div className="flex items-center">
+                <Button
+                  onClick={handleDownloadAll}
+                  disabled={selectedFiles.length === 0 || isProcessing}
+                  size="lg"
+                  className="gap-2 ml-auto"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Download Cropped ({selectedFiles.length})
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {Array.from(files).map((file) => {
                 const isSelected = selectedFiles.includes(file);
@@ -134,43 +173,6 @@ export default function CropContainer() {
               >
                 {isAllSelected ? "Deselect" : "Select"} All
               </button>
-
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="offset"
-                  className="text-sm font-medium text-muted-foreground"
-                >
-                  Offset:
-                </label>
-                <Input
-                  id="offset"
-                  type="number"
-                  min={0}
-                  max={128}
-                  value={offset}
-                  onChange={(e) => setOffset(Number(e.target.value))}
-                  className="w-24 h-9 text-sm"
-                />
-              </div>
-
-              <Button
-                onClick={handleDownloadAll}
-                disabled={selectedFiles.length === 0 || isProcessing}
-                size="lg"
-                className="gap-2 ml-auto"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Download Cropped ({selectedFiles.length})
-                  </>
-                )}
-              </Button>
             </div>
           </>
         )}
