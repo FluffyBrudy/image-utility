@@ -1,3 +1,5 @@
+import { ISize } from "../types/store.types";
+
 export function findStartingImgPixel(
   data: Uint8ClampedArray,
   width: number,
@@ -142,5 +144,42 @@ export function cropCanvas(origCanvas: HTMLCanvasElement, offset = 0) {
     rawHeight,
   );
 
+  return newCanvas;
+}
+
+export function resizeImage(origCanvas: HTMLCanvasElement, targetSize: ISize) {
+  const origImdata = origCanvas
+    .getContext("2d")!
+    .getImageData(0, 0, origCanvas.width, origCanvas.height);
+  const [targetW, targetH] = targetSize;
+  const scaleRatioX = origCanvas.width / targetW;
+  const scaleRatioY = origCanvas.height / targetH;
+
+  const newCanvas = document.createElement("canvas");
+  newCanvas.width = targetW;
+  newCanvas.height = targetH;
+  const newCtx = newCanvas.getContext("2d")!;
+  const newImdata = newCtx.getImageData(
+    0,
+    0,
+    newCanvas.width,
+    newCanvas.height,
+  );
+
+  for (let y = 0; y < targetH; y++) {
+    for (let x = 0; x < targetW; x++) {
+      const srcY = Math.floor(y * scaleRatioY);
+      const srcX = Math.floor(x * scaleRatioX);
+
+      const dstIndex = (y * targetW + x) * 4;
+      const srcIndex = (srcY * origCanvas.width + srcX) * 4;
+
+      for (let k = 0; k < 4; k++) {
+        newImdata.data[dstIndex + k] = origImdata.data[srcIndex + k];
+      }
+    }
+  }
+
+  newCtx.putImageData(newImdata, 0, 0);
   return newCanvas;
 }
