@@ -1,3 +1,5 @@
+import { ResizeContainer } from "./ResizeContainer";
+
 export default function ImageResizePage() {
-  return <h1>crop</h1>;
+  return <ResizeContainer />;
 }

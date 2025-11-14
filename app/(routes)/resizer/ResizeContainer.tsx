@@ -1,37 +1,51 @@
 "use client";
 
 import { useImageStore } from "@/app/store/image.store";
-import { ImageCrop } from "./ImageCrop";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { loadImageFromFile } from "@/app/utils/file.utils";
 import { imageToCanvas } from "@/app/utils/image.utils";
-import { cropCanvas } from "@/app/lib/imgmanip";
-import { Download, ChevronLeft, Loader2 } from "lucide-react";
+import { resizeImage } from "@/app/lib/imgmanip";
+import { Download, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import toast, { Toaster } from "react-hot-toast";
+import { ResizePreview } from "./ResizePreview";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const BATCH_SIZE = 3;
 
-export function CropContainer() {
+const PRESET_SIZES = [
+  { label: "Thumbnail (128x128)", width: 128, height: 128 },
+  { label: "Small (256x256)", width: 256, height: 256 },
+  { label: "Medium (512x512)", width: 512, height: 512 },
+  { label: "Large (1024x1024)", width: 1024, height: 1024 },
+  { label: "Custom", width: 0, height: 0 },
+];
+
+export function ResizeContainer() {
   const router = useRouter();
   const files = useImageStore((state) => state.imageFiles);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [offset, setOffset] = useState(0);
   const [processedFiles, setProcessedFiles] = useState(0);
+  const [preset, setPreset] = useState("medium");
+  const [customWidth, setCustomWidth] = useState(512);
+  const [customHeight, setCustomHeight] = useState(512);
 
-  useEffect(() => {
-    const savedOffset = Number(localStorage.getItem("crop-offset")) || 0;
-    setOffset(savedOffset);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("crop-offset", offset.toString());
-  }, [offset]);
+  const getResizeSize = () => {
+    if (preset === "custom") return [customWidth, customHeight] as const;
+    const selected = PRESET_SIZES.find((p) => p.label.toLowerCase() === preset);
+    return [selected?.width || 512, selected?.height || 512] as const;
+  };
 
   const handleSelectedFile = (file: File, shiftKey = false) => {
     if (shiftKey && selectedFiles.length) {
@@ -60,6 +74,7 @@ export function CropContainer() {
     setProcessedFiles(0);
     const zip = new JSZip();
     let fileCount = 0;
+    const [targetW, targetH] = getResizeSize();
 
     try {
       for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
@@ -69,14 +84,17 @@ export function CropContainer() {
             try {
               const img = await loadImageFromFile(file);
               const canvas = imageToCanvas(img);
-              const croppedCanvas = cropCanvas(canvas, offset);
+              const resizedCanvas = resizeImage(canvas, [targetW, targetH]);
               const blob = await new Promise<Blob | null>((resolve) =>
-                croppedCanvas.toBlob(resolve),
+                resizedCanvas.toBlob(resolve),
               );
               if (!blob) return;
 
               const extension = file.name.slice(file.name.lastIndexOf(".") + 1);
-              zip.file(`${fileCount++}.${extension}`, blob);
+              zip.file(
+                `${fileCount++}_${targetW}x${targetH}.${extension}`,
+                blob,
+              );
               setProcessedFiles((prev) => prev + 1);
             } catch (err) {
               toast.error(`Failed to process ${file.name}`);
@@ -86,7 +104,7 @@ export function CropContainer() {
         );
       }
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      saveAs(zipBlob, "cropped_images.zip");
+      saveAs(zipBlob, `resized_${targetW}x${targetH}.zip`);
       toast.success("Download ready!");
     } finally {
       setIsProcessing(false);
@@ -118,14 +136,14 @@ export function CropContainer() {
               className="p-2 hover:bg-muted rounded-lg transition-colors"
               aria-label="Go back"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <X className="w-5 h-5" />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Crop Images
+                Resize Images
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Select images to crop and remove transparent pixels
+                Resize images to your desired dimensions
               </p>
             </div>
           </div>
@@ -162,52 +180,86 @@ export function CropContainer() {
           </div>
         ) : (
           <>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="offset"
-                  className="text-sm font-medium text-muted-foreground"
-                >
-                  Offset:
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 rounded-lg border border-border bg-card">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  Resize Preset
                 </label>
-                <Input
-                  id="offset"
-                  type="range"
-                  min={0}
-                  max={128}
-                  value={offset}
-                  onChange={(e) => setOffset(Number(e.target.value))}
-                  className="w-48"
-                />
-                <span className="text-sm w-12 text-right">{offset}px</span>
+                <Select value={preset} onValueChange={setPreset}>
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRESET_SIZES.map((size) => (
+                      <SelectItem
+                        key={size.label}
+                        value={size.label.toLowerCase()}
+                      >
+                        {size.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="flex-1 flex items-center">
-                <Button
-                  onClick={handleDownloadAll}
-                  disabled={selectedFiles.length === 0 || isProcessing}
-                  size="lg"
-                  className="gap-2 ml-auto"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Processing {processedFiles}/{selectedFiles.length}
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      Download Cropped ({selectedFiles.length})
-                    </>
-                  )}
-                </Button>
-              </div>
+              {preset === "custom" && (
+                <div className="flex gap-4 flex-1">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-muted-foreground mb-2">
+                      Width (px)
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="4096"
+                      value={customWidth}
+                      onChange={(e) => setCustomWidth(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-muted-foreground mb-2">
+                      Height (px)
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="4096"
+                      value={customHeight}
+                      onChange={(e) => setCustomHeight(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-1" />
+              <Button
+                onClick={handleDownloadAll}
+                disabled={selectedFiles.length === 0 || isProcessing}
+                size="lg"
+                className="gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing {processedFiles}/{selectedFiles.length}
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Download Resized ({selectedFiles.length})
+                  </>
+                )}
+              </Button>
             </div>
 
             {isProcessing && (
               <div className="w-full bg-muted h-2 rounded mt-2">
                 <div
-                  className="bg-primary h-2 rounded"
+                  className="bg-primary h-2 rounded transition-all"
                   style={{
                     width: `${(processedFiles / selectedFiles.length) * 100}%`,
                   }}
@@ -236,10 +288,10 @@ export function CropContainer() {
                       </div>
                     )}
 
-                    <ImageCrop
+                    <ResizePreview
                       file={file}
                       isSelected={isSelected}
-                      previewOffset={offset}
+                      targetSize={getResizeSize()}
                     />
                   </div>
                 );
