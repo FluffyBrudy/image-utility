@@ -51,8 +51,7 @@ export default function Page() {
               </p>
               <p className="text-red-400">
                 I’ve also written my own algorithms for learning purposes, so
-                bugs are expected. If you find any, my GitHub username is
-                FluffyBrudy, and the project is available there.
+                bugs are expected.
               </p>
             </div>
             <button
