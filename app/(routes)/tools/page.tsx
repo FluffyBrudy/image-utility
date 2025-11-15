@@ -23,8 +23,7 @@ export default function Page() {
 
   useEffect(() => {
     const sessionKey = "imut_info_shown";
-    const hasShown = sessionStorage.getItem(sessionKey);
-    if (!hasShown) {
+    if (!sessionStorage.getItem(sessionKey)) {
       sessionStorage.setItem(sessionKey, "true");
     }
   }, []);
@@ -38,20 +37,18 @@ export default function Page() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
       {showNotification && (
-        <div className="w-full max-w-2xl mb-8 p-4 rounded-lg border border-border bg-card">
-          <div className="flex gap-3">
+        <div className="w-full max-w-2xl mb-8 p-5 rounded-lg border border-border bg-card shadow-sm">
+          <div className="flex gap-4">
             <div className="flex-1">
-              <h1 className="text-lg text-foreground">
-                Welcome to imut - Image Utility Tool
+              <h1 className="text-lg font-semibold text-foreground">
+                Welcome to imut – Your Image Utility Tool
               </h1>
               <p className="text-muted-foreground mt-1">
-                I made this project for myself because I often face problems and
-                get tired of switching between multiple tools. I’ll keep adding
-                features as I go, but feel free to use it if it’s helpful.
+                This tool was created to simplify your image editing workflow.
+                Upload images and use our tools without switching between apps.
               </p>
-              <p className="text-red-400">
-                I’ve also written my own algorithms for learning purposes, so
-                bugs are expected.
+              <p className="text-sm text-red-500 mt-1">
+                Note: crop and resize use custom algorithm so bugs may occur.
               </p>
             </div>
             <button
@@ -71,8 +68,7 @@ export default function Page() {
         </div>
         <h1 className="text-4xl font-bold text-foreground mb-3">Image Tools</h1>
         <p className="text-lg text-muted-foreground">
-          Choose a tool to process your images. Upload any format, and select
-          your editing method.
+          Upload images of any format and select your preferred editing tool.
         </p>
       </div>
 
@@ -100,7 +96,7 @@ export default function Page() {
                     onClick={() => setImageFiles([])}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
-                    Clear
+                    Clear All
                   </div>
                 </div>
 
@@ -163,10 +159,16 @@ export default function Page() {
         </Button>
       </div>
 
-      <p className="text-sm text-muted-foreground mt-8 text-center max-w-xs">
-        Support for PNG, JPG, JPEG, GIF, and WebP formats. Up to {MAX_FILES}{" "}
-        images at a time.
-      </p>
+      <div className="mt-8 text-center max-w-xs space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Supports PNG, JPG, JPEG, GIF, and WebP. Upload up to {MAX_FILES}{" "}
+          images at once.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Cropping works on images with alpha channels. Other images will be
+          accepted but won’t auto-crop.
+        </p>
+      </div>
     </main>
   );
 }
